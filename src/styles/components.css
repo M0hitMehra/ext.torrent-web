@@ -752,6 +752,226 @@
 }
 
 /* --------------------------------------------------------------------------
+   Player Selector Modal
+   -------------------------------------------------------------------------- */
+.player-selector-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.player-selector-modal {
+  width: 100%;
+  max-width: 620px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.selector-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.selector-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--neu-shadow-raised);
+}
+
+.selector-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.selector-title {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.selector-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 420px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.selector-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  transition: all var(--transition-fast);
+}
+
+.selector-close-btn:hover {
+  color: var(--text-main);
+  background: var(--glass-bg-hover);
+}
+
+.selector-options-list {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.player-option-tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  border: 1.5px solid var(--glass-border);
+  background: var(--glass-bg);
+  transition: all var(--transition-fast);
+}
+
+.player-option-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-primary);
+  background: var(--glass-bg-hover);
+}
+
+.player-option-tile.default-tile {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.player-option-tile.default-tile:hover {
+  background: rgba(99, 102, 241, 0.18);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+}
+
+.option-tile-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-webtor {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--accent-primary);
+}
+
+.icon-browser {
+  background: rgba(6, 182, 212, 0.2);
+  color: #06b6d4;
+}
+
+.icon-torrserver {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+.icon-vlc {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.icon-system {
+  background: rgba(100, 116, 139, 0.2);
+  color: var(--text-sub);
+}
+
+.icon-copy {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--seeder);
+}
+
+.option-tile-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.option-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.option-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.badge-recommended {
+  background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+  color: #ffffff;
+}
+
+.badge-browser {
+  background: rgba(6, 182, 212, 0.2);
+  color: #06b6d4;
+}
+
+.badge-torrserver {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+.badge-vlc {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.option-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.option-arrow-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
    Player Modal (Theater Streaming)
    -------------------------------------------------------------------------- */
 .player-modal-backdrop {

@@ -111,7 +111,7 @@ export function DetailModal({ visible, onClose, torrent, onStream, onCopyMagnet 
               onClick={() => { onClose(); onStream(detail || torrent); }}
             >
               <Play size={20} fill="#ffffff" />
-              <span>STREAM IN WEBTOR</span>
+              <span>STREAM / CHOOSE PLAYER</span>
             </button>
 
             {magnet && (

@@ -17,6 +17,7 @@ import { Navbar } from './components/Navbar';
 import { HeroBanner } from './components/HeroBanner';
 import { TorrentRow } from './components/TorrentRow';
 import { PlayerModal } from './components/PlayerModal';
+import { PlayerSelectorModal } from './components/PlayerSelectorModal';
 import { DetailModal } from './components/DetailModal';
 import { SearchPage } from './components/SearchPage';
 import { Toast } from './components/Toast';
@@ -38,7 +39,9 @@ export function App() {
   // Modals state
   const [selectedTorrentForStream, setSelectedTorrentForStream] = useState(null);
   const [selectedTorrentForDetail, setSelectedTorrentForDetail] = useState(null);
+  const [playerSelectorOpen, setPlayerSelectorOpen] = useState(false);
   const [playerModalOpen, setPlayerModalOpen] = useState(false);
+  const [streamEngine, setStreamEngine] = useState('webtor');
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   // Toast state
@@ -72,22 +75,28 @@ export function App() {
   }, []);
 
   // Trigger clipboard copy with toast
-  const handleCopyMagnet = useCallback((magnet) => {
+  const handleCopyMagnet = useCallback((magnet, customMsg) => {
     if (!magnet) return;
     navigator.clipboard.writeText(magnet).then(() => {
-      setToastMessage('Magnet link copied to clipboard!');
+      setToastMessage(customMsg || 'Magnet link copied to clipboard!');
       setToastVisible(true);
       setTimeout(() => setToastVisible(false), 2400);
     }).catch(() => {
-      setToastMessage('Copied magnet to clipboard');
+      setToastMessage(customMsg || 'Copied magnet to clipboard');
       setToastVisible(true);
       setTimeout(() => setToastVisible(false), 2400);
     });
   }, []);
 
-  // Stream Trigger
+  // Stream Trigger -> Opens Player Selector Modal
   const handleOpenStream = useCallback((torrent) => {
     setSelectedTorrentForStream(torrent);
+    setPlayerSelectorOpen(true);
+  }, []);
+
+  // In-App Engine Selected from Modal
+  const handleSelectInAppStream = useCallback((engine) => {
+    setStreamEngine(engine);
     setPlayerModalOpen(true);
   }, []);
 
@@ -270,12 +279,23 @@ export function App() {
         </div>
       </footer>
 
-      {/* In-App WebTor Player Modal */}
+      {/* Player Choice Selector Modal */}
+      <PlayerSelectorModal
+        visible={playerSelectorOpen}
+        onClose={() => setPlayerSelectorOpen(false)}
+        torrent={selectedTorrentForStream}
+        magnet={selectedTorrentForStream?.magnet}
+        onSelectInAppStream={handleSelectInAppStream}
+        onCopyMagnet={handleCopyMagnet}
+      />
+
+      {/* In-App Streaming Theater Player Modal */}
       <PlayerModal
         visible={playerModalOpen}
         onClose={() => setPlayerModalOpen(false)}
         torrent={selectedTorrentForStream}
         magnet={selectedTorrentForStream?.magnet}
+        initialEngine={streamEngine}
         onCopyMagnet={handleCopyMagnet}
       />
 
