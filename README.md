@@ -1,3 +1,4 @@
+https://ext-torrent-web.vercel.app/
 # 🎬 ExtTorrent Web — Glass & Neumorphic Streaming Cinema
 
 > A next-generation, Netflix-style web application for searching, discovering, and streaming torrents in real-time, featuring a hybrid **Glassmorphism + Neumorphism** design system with seamless **Day & Dark Mode**.
