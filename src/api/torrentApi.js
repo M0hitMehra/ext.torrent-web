@@ -100,6 +100,47 @@ export async function getMagnet(id) {
   return res.data;
 }
 
+/**
+ * Fetch high-definition stream sources (PopcornTV & multi-embed network).
+ */
+export async function getMovieStreams(id) {
+  try {
+    const res = await client.get(`/api/stream/movie/${encodeURIComponent(id)}`);
+    return res.data;
+  } catch (err) {
+    // If backend proxy fails or is updating, return direct fallback sources
+    return {
+      success: true,
+      sources: [
+        { provider: 'VidLink (Ad-Free)', embedUrl: `https://vidlink.pro/movie/${id}?primaryColor=6366f1&autoplay=true`, quality: '1080p', status: 'active', adLevel: 'none' },
+        { provider: 'VidCore HD', embedUrl: `https://vidcore.org/embed/movie/${id}`, quality: '1080p', status: 'active', adLevel: 'none' },
+        { provider: 'AutoEmbed Player', embedUrl: `https://player.autoembed.cc/embed/movie/${id}?autoplay=1`, quality: '1080p', status: 'active', adLevel: 'light' },
+        { provider: 'VixHD Stream', embedUrl: `https://vidsrc.hair/embed/movie/${id}?autoPlay=1`, quality: '1080p', status: 'active', adLevel: 'light' },
+        { provider: 'EmbedSU Ultra', embedUrl: `https://embed.su/embed/movie/${id}`, quality: '1080p', status: 'active', adLevel: 'light' },
+      ],
+    };
+  }
+}
+
+export async function getTvStreams(id, season = 1, episode = 1) {
+  try {
+    const res = await client.get(`/api/stream/tv/${encodeURIComponent(id)}`, {
+      params: { s: season, e: episode },
+    });
+    return res.data;
+  } catch (err) {
+    return {
+      success: true,
+      sources: [
+        { provider: 'VidLink (Ad-Free)', embedUrl: `https://vidlink.pro/tv/${id}/${season}/${episode}?primaryColor=6366f1&autoplay=true`, quality: '1080p', status: 'active', adLevel: 'none' },
+        { provider: 'VidCore HD', embedUrl: `https://vidcore.org/embed/tv/${id}/${season}/${episode}`, quality: '1080p', status: 'active', adLevel: 'none' },
+        { provider: 'AutoEmbed Player', embedUrl: `https://player.autoembed.cc/embed/tv/${id}/${season}/${episode}?autoplay=1`, quality: '1080p', status: 'active', adLevel: 'light' },
+        { provider: 'VixHD Stream', embedUrl: `https://vidsrc.hair/embed/tv/${id}/${season}/${episode}?autoPlay=1`, quality: '1080p', status: 'active', adLevel: 'light' },
+      ],
+    };
+  }
+}
+
 export default {
   checkBackendHealth,
   searchTorrents,
@@ -108,4 +149,6 @@ export default {
   browseTorrents,
   getTorrentDetail,
   getMagnet,
+  getMovieStreams,
+  getTvStreams,
 };

@@ -1,8 +1,10 @@
 /**
  * PlayerSelectorModal.jsx
  * Glassmorphic Neumorphic Player Selector Modal.
- * Prompts user to choose their preferred streaming player (WebTor default),
- * automatically copies the magnet link to clipboard, and initiates stream playback.
+ * Prompts user to choose their preferred streaming player (WebTor default).
+ * When WebTor is selected, automatically copies the magnet link to clipboard
+ * and launches WebTor with the magnet auto-loaded so video starts streaming immediately.
+ * Also offers Instant Cinema In-App Stream (powered by PopcornTV & multi-embeds).
  */
 import React, { useState } from 'react';
 import {
@@ -30,24 +32,24 @@ export function PlayerSelectorModal({
 
   if (!visible || !torrent || !magnet) return null;
 
-  // 1. WebTor In-App Stream (Default)
-  const handleWebTorInApp = async () => {
-    // Automatically copy magnet URL to clipboard
-    await onCopyMagnet(magnet, 'Magnet link copied! Starting In-App WebTor Stream...');
+  // 1. WebTor Auto-Stream (Default & Recommended)
+  const handleWebTorLaunch = async () => {
+    // Automatically copy magnet URL to clipboard with confirmation
+    await onCopyMagnet(magnet, 'Magnet copied! Auto-loading WebTor stream...');
     onClose();
-    onSelectInAppStream('webtor');
-  };
-
-  // 2. WebTor in Web Browser
-  const handleWebTorBrowser = async () => {
-    // Automatically copy magnet URL to clipboard
-    await onCopyMagnet(magnet, 'Magnet link copied! Opening WebTor in new tab...');
-    onClose();
+    // Open WebTor with the preloaded action and magnet in a top-level tab to bypass Cloudflare Turnstile iframe restrictions
     const webTorUrl = `https://webtor.io/#action=load&magnet=${encodeURIComponent(magnet)}`;
     window.open(webTorUrl, '_blank', 'noopener,noreferrer');
   };
 
-  // 3. TorrServer Direct
+  // 2. Instant In-App Cinema Stream (PopcornTV & Multi-Provider Hub)
+  const handleInstantInApp = async () => {
+    await onCopyMagnet(magnet, 'Opening Instant Cinema Player...');
+    onClose();
+    onSelectInAppStream('instant');
+  };
+
+  // 3. TorrServer HTTP Stream
   const handleTorrServer = async () => {
     await onCopyMagnet(magnet, 'Starting TorrServer stream...');
     onClose();
@@ -61,7 +63,7 @@ export function PlayerSelectorModal({
     window.location.href = `vlc://${magnet}`;
   };
 
-  // 5. System Default App
+  // 5. System Default App (qBittorrent, Stremio, etc.)
   const handleSystemApp = async () => {
     await onCopyMagnet(magnet, 'Magnet copied! Opening in system media app...');
     onClose();
@@ -101,46 +103,48 @@ export function PlayerSelectorModal({
 
         {/* Player Options List */}
         <div className="selector-options-list">
-          {/* Option 1: WebTor In-App (Default & Recommended) */}
+          {/* Option 1: WebTor Auto-Stream (Default & User Requested) */}
           <div
             className="player-option-tile default-tile neu-button"
-            onClick={handleWebTorInApp}
+            onClick={handleWebTorLaunch}
           >
             <div className="option-tile-icon icon-webtor">
               <Film size={24} />
             </div>
             <div className="option-tile-body">
               <div className="option-title-row">
-                <span className="option-title">WebTor In-App Theater</span>
+                <span className="option-title">WebTor Player</span>
                 <span className="badge-pill badge-recommended">
-                  <Sparkles size={11} /> DEFAULT • NO ADS
+                  <Sparkles size={11} /> DEFAULT • AUTO-COPY & PLAY
                 </span>
               </div>
               <p className="option-desc">
-                Auto-copies magnet & streams directly inside the app with zero manual pasting.
+                Copies magnet URL automatically and launches WebTor stream instantly without any manual pasting.
               </p>
             </div>
-            <Play size={20} className="option-arrow-icon" fill="currentColor" />
+            <ExternalLink size={20} className="option-arrow-icon" />
           </div>
 
-          {/* Option 2: WebTor in New Browser Tab */}
+          {/* Option 2: Instant Cinema In-App Stream (PopcornTV & Multi-Embed Hub) */}
           <div
             className="player-option-tile neu-button"
-            onClick={handleWebTorBrowser}
+            onClick={handleInstantInApp}
           >
-            <div className="option-tile-icon icon-browser">
-              <ExternalLink size={22} />
+            <div className="option-tile-icon icon-cinema">
+              <Zap size={22} color="#ec4899" />
             </div>
             <div className="option-tile-body">
               <div className="option-title-row">
-                <span className="option-title">WebTor in New Tab</span>
-                <span className="badge-pill badge-browser">AUTO-LOAD</span>
+                <span className="option-title">Instant Cinema Stream (In-App)</span>
+                <span className="badge-pill badge-cinema">
+                  1080P • ZERO WAIT
+                </span>
               </div>
               <p className="option-desc">
-                Copies magnet to clipboard and auto-loads stream in a separate browser window.
+                Streams in full 1080p directly inside the app with multi-server switching (VidLink, AutoEmbed, VidSrc).
               </p>
             </div>
-            <ExternalLink size={18} className="option-arrow-icon" />
+            <Play size={18} className="option-arrow-icon" fill="currentColor" />
           </div>
 
           {/* Option 3: TorrServer Direct Stream */}
@@ -177,7 +181,7 @@ export function PlayerSelectorModal({
                 <span className="badge-pill badge-vlc">EXTERNAL APP</span>
               </div>
               <p className="option-desc">
-                Passes magnet to official VLC with full hardware acceleration and subtitle switching.
+                Passes magnet to official VLC with hardware acceleration and subtitle switching.
               </p>
             </div>
             <Tv size={18} className="option-arrow-icon" />
