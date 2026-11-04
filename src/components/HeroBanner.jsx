@@ -2,6 +2,7 @@
  * HeroBanner.jsx
  * Netflix Billboard Hero section featuring a trending blockbuster.
  * Features high-res cinematic backdrop, metadata badges, and streaming triggers.
+ * Automatically checks format playability: hides stream for non-playable games/archives.
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -14,8 +15,11 @@ import {
   ArrowUp,
   HardDrive,
   Calendar,
+  Download,
+  Package,
 } from 'lucide-react';
 import { fetchMediaMetadata } from '../api/metaApi';
+import { isPlayableTorrent, getContentFormatLabel } from '../utils/mediaType';
 
 export function HeroBanner({ torrent, onStream, onDetails, onCopyMagnet }) {
   const [metadata, setMetadata] = useState(null);
@@ -33,15 +37,23 @@ export function HeroBanner({ torrent, onStream, onDetails, onCopyMagnet }) {
 
   if (!torrent) return null;
 
+  const playable = isPlayableTorrent(torrent);
   const backdropUrl = metadata?.background || metadata?.poster || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=1920&q=80';
   const displayTitle = metadata?.name || torrent.title;
   const seeders = parseInt(torrent.seeders) || 0;
 
   const handleCopy = () => {
     if (torrent.magnet) {
-      onCopyMagnet(torrent.magnet);
+      onCopyMagnet(torrent.magnet, 'Magnet link copied to clipboard!');
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
+    }
+  };
+
+  const handleDirectDownload = () => {
+    if (torrent.magnet) {
+      onCopyMagnet(torrent.magnet, 'Opening magnet in torrent client...');
+      window.location.href = torrent.magnet;
     }
   };
 
@@ -61,6 +73,11 @@ export function HeroBanner({ torrent, onStream, onDetails, onCopyMagnet }) {
         {/* Release Badges Row */}
         <div className="hero-badges-row">
           <span className="hero-featured-tag">🔥 #1 FEATURED RELEASE</span>
+          {!playable && (
+            <span className="badge-pill badge-archive">
+              <Package size={11} /> {getContentFormatLabel(torrent)}
+            </span>
+          )}
           {metadata?.year && (
             <span className="badge-pill hero-pill">
               <Calendar size={12} /> {metadata.year}
@@ -100,14 +117,24 @@ export function HeroBanner({ torrent, onStream, onDetails, onCopyMagnet }) {
 
         {/* Action Buttons */}
         <div className="hero-actions-row">
-          {/* Primary Stream Now Button */}
-          <button
-            className="neu-button neu-button-primary hero-btn-play"
-            onClick={() => onStream(torrent)}
-          >
-            <Play size={20} fill="#ffffff" />
-            <span>STREAM NOW</span>
-          </button>
+          {/* Primary Action Button: Stream if playable, Direct Download if unplayable archive */}
+          {playable ? (
+            <button
+              className="neu-button neu-button-primary hero-btn-play"
+              onClick={() => onStream(torrent)}
+            >
+              <Play size={20} fill="#ffffff" />
+              <span>STREAM NOW</span>
+            </button>
+          ) : (
+            <button
+              className="neu-button neu-button-primary hero-btn-download"
+              onClick={handleDirectDownload}
+            >
+              <Download size={20} />
+              <span>DOWNLOAD TORRENT</span>
+            </button>
+          )}
 
           {/* More Info Button */}
           <button
@@ -130,8 +157,8 @@ export function HeroBanner({ torrent, onStream, onDetails, onCopyMagnet }) {
             </button>
           )}
 
-          {/* Watch Official Trailer (if available) */}
-          {metadata?.trailerUrl && (
+          {/* Watch Official Trailer (if available and playable) */}
+          {playable && metadata?.trailerUrl && (
             <a
               href={metadata.trailerUrl}
               target="_blank"
