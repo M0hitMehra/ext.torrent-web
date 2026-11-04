@@ -1,23 +1,22 @@
 /**
  * PlayerSelectorModal.jsx
  * Glassmorphic Neumorphic Player Selector Modal.
- * Prompts user to choose their preferred streaming player (WebTor default).
- * When WebTor is selected, automatically copies the magnet link to clipboard
- * and launches WebTor with the magnet auto-loaded so video starts streaming immediately.
- * Also offers Instant Cinema In-App Stream (powered by PopcornTV & multi-embeds).
+ * Prompts user to choose their preferred streaming player.
+ * Video opens directly inside the web application — no broken external tabs.
+ * Automatically copies the magnet link to clipboard on selection.
  */
 import React, { useState } from 'react';
 import {
   X,
   Play,
   Film,
-  ExternalLink,
   Tv,
   Smartphone,
   Copy,
   Check,
   Zap,
   Sparkles,
+  Share2,
 } from 'lucide-react';
 
 export function PlayerSelectorModal({
@@ -32,24 +31,21 @@ export function PlayerSelectorModal({
 
   if (!visible || !torrent || !magnet) return null;
 
-  // 1. WebTor Auto-Stream (Default & Recommended)
-  const handleWebTorLaunch = async () => {
-    // Automatically copy magnet URL to clipboard with confirmation
-    await onCopyMagnet(magnet, 'Magnet copied! Auto-loading WebTor stream...');
-    onClose();
-    // Open WebTor with the preloaded action and magnet in a top-level tab to bypass Cloudflare Turnstile iframe restrictions
-    const webTorUrl = `https://webtor.io/#action=load&magnet=${encodeURIComponent(magnet)}`;
-    window.open(webTorUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  // 2. Instant In-App Cinema Stream (PopcornTV & Multi-Provider Hub)
+  // 1. Instant Cinema In-App Stream (Default & Recommended)
   const handleInstantInApp = async () => {
-    await onCopyMagnet(magnet, 'Opening Instant Cinema Player...');
+    await onCopyMagnet(magnet, 'Magnet copied! Starting In-App Cinema Player...');
     onClose();
     onSelectInAppStream('instant');
   };
 
-  // 3. TorrServer HTTP Stream
+  // 2. WebTorrent In-Browser P2P Player
+  const handleWebTorrentP2P = async () => {
+    await onCopyMagnet(magnet, 'Magnet copied! Starting In-Browser P2P Stream...');
+    onClose();
+    onSelectInAppStream('webtorrent');
+  };
+
+  // 3. TorrServer Direct Stream
   const handleTorrServer = async () => {
     await onCopyMagnet(magnet, 'Starting TorrServer stream...');
     onClose();
@@ -103,48 +99,46 @@ export function PlayerSelectorModal({
 
         {/* Player Options List */}
         <div className="selector-options-list">
-          {/* Option 1: WebTor Auto-Stream (Default & User Requested) */}
+          {/* Option 1: Instant In-App Cinema Stream (Default & Recommended) */}
           <div
             className="player-option-tile default-tile neu-button"
-            onClick={handleWebTorLaunch}
-          >
-            <div className="option-tile-icon icon-webtor">
-              <Film size={24} />
-            </div>
-            <div className="option-tile-body">
-              <div className="option-title-row">
-                <span className="option-title">WebTor Player</span>
-                <span className="badge-pill badge-recommended">
-                  <Sparkles size={11} /> DEFAULT • AUTO-COPY & PLAY
-                </span>
-              </div>
-              <p className="option-desc">
-                Copies magnet URL automatically and launches WebTor stream instantly without any manual pasting.
-              </p>
-            </div>
-            <ExternalLink size={20} className="option-arrow-icon" />
-          </div>
-
-          {/* Option 2: Instant Cinema In-App Stream (PopcornTV & Multi-Embed Hub) */}
-          <div
-            className="player-option-tile neu-button"
             onClick={handleInstantInApp}
           >
             <div className="option-tile-icon icon-cinema">
-              <Zap size={22} color="#ec4899" />
+              <Zap size={24} color="#ec4899" />
             </div>
             <div className="option-tile-body">
               <div className="option-title-row">
-                <span className="option-title">Instant Cinema Stream (In-App)</span>
-                <span className="badge-pill badge-cinema">
-                  1080P • ZERO WAIT
+                <span className="option-title">Instant Cinema Player (In-App)</span>
+                <span className="badge-pill badge-recommended">
+                  <Sparkles size={11} /> RECOMMENDED • 1080P ZERO WAIT
                 </span>
               </div>
               <p className="option-desc">
-                Streams in full 1080p directly inside the app with multi-server switching (VidLink, AutoEmbed, VidSrc).
+                Plays immediately inside your web app with multi-server switching (VidLink, AutoEmbed, VidSrc, Popcorn Hub).
               </p>
             </div>
-            <Play size={18} className="option-arrow-icon" fill="currentColor" />
+            <Play size={20} className="option-arrow-icon" fill="currentColor" />
+          </div>
+
+          {/* Option 2: WebTorrent In-Browser P2P Streamer */}
+          <div
+            className="player-option-tile neu-button"
+            onClick={handleWebTorrentP2P}
+          >
+            <div className="option-tile-icon icon-webtor">
+              <Film size={22} />
+            </div>
+            <div className="option-tile-body">
+              <div className="option-title-row">
+                <span className="option-title">WebTorrent In-Browser P2P</span>
+                <span className="badge-pill badge-browser">PEER-TO-PEER</span>
+              </div>
+              <p className="option-desc">
+                Client-side browser engine connects directly to torrent swarm and streams video right into your web app.
+              </p>
+            </div>
+            <Play size={18} className="option-arrow-icon" />
           </div>
 
           {/* Option 3: TorrServer Direct Stream */}

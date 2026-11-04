@@ -1948,3 +1948,115 @@
   background: rgba(236, 72, 153, 0.15) !important;
   color: #ec4899 !important;
 }
+
+
+/* --------------------------------------------------------------------------
+   WebTorrent Native In-Browser P2P Player Styles
+   -------------------------------------------------------------------------- */
+.webtorrent-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  display: flex;
+  flex-direction: column;
+}
+
+.webtorrent-native-video {
+  width: 100%;
+  height: 100%;
+  max-height: calc(100% - 44px);
+  object-fit: contain;
+  background: #000000;
+}
+
+.p2p-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(10, 12, 19, 0.9);
+  border-top: 1px solid var(--glass-border);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.p2p-status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.p2p-pulse-icon {
+  color: var(--seeder);
+  animation: pulse 1.5s infinite;
+}
+
+.p2p-status-text {
+  font-weight: 600;
+  color: var(--text-main);
+  max-width: 380px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.p2p-status-metrics {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.p2p-metric-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.p2p-metric-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--accent-primary);
+  font-weight: 800;
+  font-size: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.p2p-error-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(239, 68, 68, 0.9);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+  z-index: 20;
+}
+
+.p2p-error-switch-btn {
+  background: #ffffff;
+  color: #ef4444;
+  border: none;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.p2p-error-switch-btn:hover {
+  background: #fef2f2;
+  transform: scale(1.05);
+}

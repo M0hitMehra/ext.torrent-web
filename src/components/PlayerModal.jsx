@@ -1,17 +1,16 @@
 /**
  * PlayerModal.jsx
- * In-App Cinema Streaming Theater & WebTor Auto-Launcher.
- * Fixes the WebTor blank screen by offering:
- * 1. Instant In-App Cinema Stream (Powered by PopcornTV & multi-embed networks: VidLink, VidCore, AutoEmbed, VidSrc)
- * 2. Dedicated WebTor Auto-Launcher (Auto-copies magnet & launches top-level tab to bypass Cloudflare Turnstile blocks)
- * 3. TorrServer Sequential HTTP Stream
- * 4. External Player integration (VLC, etc.)
+ * In-App Cinema Streaming Theater & WebTorrent P2P In-Browser Player.
+ * All streams run directly inside your website — zero external broken tabs.
+ * 1. Instant Cinema Player: PopcornTV & Multi-Provider 1080p Streams (VidLink, AutoEmbed, VidSrc)
+ * 2. WebTorrent In-Browser Player: Real client-side P2P WebRTC streaming into HTML5 <video>
+ * 3. TorrServer Direct Stream: Sequential HTTP stream
+ * 4. External Player Controls: VLC launch & Auto-copied magnet link
  */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Maximize2,
-  ExternalLink,
   Copy,
   Check,
   Tv,
@@ -21,9 +20,19 @@ import {
   Server,
   Sparkles,
   AlertCircle,
+  Wifi,
+  Download,
+  Users,
 } from 'lucide-react';
 import { fetchMediaMetadata, cleanTitle } from '../api/metaApi';
 import { getMovieStreams, getTvStreams } from '../api/torrentApi';
+
+// Public WebRTC Trackers for in-browser WebTorrent P2P
+const WEBRTC_TRACKERS = [
+  'wss://tracker.openwebtorrent.com',
+  'wss://tracker.btorrent.xyz',
+  'wss://tracker.fastcast.nz',
+];
 
 export function PlayerModal({
   visible,
@@ -33,7 +42,7 @@ export function PlayerModal({
   initialEngine = 'instant',
   onCopyMagnet,
 }) {
-  const [engine, setEngine] = useState(initialEngine); // 'instant' | 'webtor' | 'torrserver'
+  const [engine, setEngine] = useState(initialEngine); // 'instant' | 'webtorrent' | 'torrserver'
   const [copied, setCopied] = useState(false);
   const [isTheater, setIsTheater] = useState(false);
   const [mediaMeta, setMediaMeta] = useState(null);
@@ -42,12 +51,29 @@ export function PlayerModal({
   const [loadingStreams, setLoadingStreams] = useState(false);
   const [streamError, setStreamError] = useState(null);
 
-  // Sync engine when opened
+  // WebTorrent In-Browser State
+  const [p2pStatus, setP2pStatus] = useState('Connecting to WebRTC swarm...');
+  const [p2pProgress, setP2pProgress] = useState(0);
+  const [p2pSpeed, setP2pSpeed] = useState('0 KB/s');
+  const [p2pPeers, setP2pPeers] = useState(0);
+  const [p2pReady, setP2pReady] = useState(false);
+  const [p2pError, setP2pError] = useState(null);
+  const videoRef = useRef(null);
+  const clientRef = useRef(null);
+
+  // Sync initial engine when modal opens
   useEffect(() => {
     if (initialEngine) setEngine(initialEngine);
-  }, [initialEngine]);
+  }, [initialEngine, visible]);
 
-  // Load Metadata & Stream Sources for Instant Cinema
+  // Automatically copy magnet on modal open
+  useEffect(() => {
+    if (visible && magnet) {
+      onCopyMagnet(magnet, 'Magnet link copied to clipboard!');
+    }
+  }, [visible, magnet, onCopyMagnet]);
+
+  // Load Metadata & Instant Cinema Streams
   useEffect(() => {
     if (!visible || !torrent) return;
 
@@ -66,7 +92,6 @@ export function PlayerModal({
 
         let streamData;
         if (isTv) {
-          // Extract season & episode if present in title
           const sMatch = torrent.title.match(/s(\d{1,2})/i);
           const eMatch = torrent.title.match(/e(\d{1,2})/i);
           const season = sMatch ? parseInt(sMatch[1], 10) : 1;
@@ -81,11 +106,11 @@ export function PlayerModal({
           setStreamSources(streamData.sources);
           setSelectedSourceIndex(0);
         } else {
-          setStreamError('No direct streaming server found for this release.');
+          setStreamError('No direct streaming server found for this title.');
         }
       } catch (err) {
         if (!mounted) return;
-        setStreamError('Failed to load stream servers. Switch to WebTor or TorrServer.');
+        setStreamError('Failed to load stream servers. Switch to WebTorrent or TorrServer.');
       } finally {
         if (mounted) setLoadingStreams(false);
       }
@@ -95,10 +120,107 @@ export function PlayerModal({
     return () => { mounted = false; };
   }, [visible, torrent]);
 
+  // In-Browser WebTorrent P2P Client Handler
+  useEffect(() => {
+    if (!visible || !magnet || engine !== 'webtorrent') {
+      if (clientRef.current) {
+        try { clientRef.current.destroy(); } catch (_) {}
+        clientRef.current = null;
+      }
+      return;
+    }
+
+    let client = null;
+    let activeTorrent = null;
+
+    try {
+      if (typeof window.WebTorrent !== 'function') {
+        setP2pError('WebTorrent library not loaded. Switch to Instant Cinema Player.');
+        return;
+      }
+
+      setP2pStatus('Initializing WebTorrent client...');
+      setP2pProgress(0);
+      setP2pSpeed('0 KB/s');
+      setP2pPeers(0);
+      setP2pReady(false);
+      setP2pError(null);
+
+      client = new window.WebTorrent();
+      clientRef.current = client;
+
+      // Ensure magnet has WebRTC trackers appended
+      let enrichedMagnet = magnet;
+      WEBRTC_TRACKERS.forEach(tracker => {
+        const trackerParam = `&tr=${encodeURIComponent(tracker)}`;
+        if (!enrichedMagnet.includes(trackerParam)) {
+          enrichedMagnet += trackerParam;
+        }
+      });
+
+      client.add(enrichedMagnet, (torr) => {
+        activeTorrent = torr;
+        setP2pStatus('Searching compatible video in swarm...');
+
+        // Find primary video file (.mp4, .mkv, .webm, .m4v, .avi)
+        const videoFile = torr.files.find(f => {
+          const name = f.name.toLowerCase();
+          return name.endsWith('.mp4') || name.endsWith('.webm') || name.endsWith('.mkv') || name.endsWith('.m4v');
+        }) || torr.files[0];
+
+        if (!videoFile) {
+          setP2pStatus('No video file found in this torrent swarm.');
+          return;
+        }
+
+        setP2pStatus(`Streaming ${videoFile.name}...`);
+
+        if (videoRef.current) {
+          videoFile.renderTo(videoRef.current, { autoplay: true }, (err) => {
+            if (err) {
+              console.warn('WebTorrent render error:', err);
+              setP2pError(`Video codec notice: ${err.message}. Switch to Instant Cinema for direct playback.`);
+            } else {
+              setP2pReady(true);
+            }
+          });
+        }
+
+        // Live download stats
+        torr.on('download', () => {
+          const percent = Math.round(torr.progress * 100);
+          const speed = (torr.downloadSpeed / 1024 / 1024).toFixed(2);
+          setP2pProgress(percent);
+          setP2pSpeed(`${speed} MB/s`);
+          setP2pPeers(torr.numPeers || 0);
+        });
+
+        torr.on('done', () => {
+          setP2pProgress(100);
+          setP2pStatus('Torrent 100% downloaded! Direct playback active.');
+        });
+      });
+
+      client.on('error', (err) => {
+        console.warn('WebTorrent error:', err);
+        setP2pError('Swarm connection notice. Switching to Instant Cinema recommended.');
+      });
+    } catch (e) {
+      console.warn('WebTorrent init exception:', e);
+      setP2pError('Browser WebRTC unavailable. Switch to Instant Cinema Player.');
+    }
+
+    return () => {
+      if (client) {
+        try { client.destroy(); } catch (_) {}
+      }
+      clientRef.current = null;
+    };
+  }, [visible, magnet, engine]);
+
   if (!visible || !magnet) return null;
 
   const currentSource = streamSources[selectedSourceIndex] || null;
-  const webTorUrl = `https://webtor.io/#action=load&magnet=${encodeURIComponent(magnet)}`;
   const torrServerUrl = `https://torrserver.me/stream?link=${encodeURIComponent(magnet)}&index=0&play`;
 
   const handleCopy = () => {
@@ -110,11 +232,6 @@ export function PlayerModal({
   const handleOpenVLC = () => {
     onCopyMagnet(magnet, 'Opening in VLC Player...');
     window.location.href = `vlc://${magnet}`;
-  };
-
-  const handleLaunchWebTor = () => {
-    onCopyMagnet(magnet, 'Magnet copied! Launching WebTor stream in new tab...');
-    window.open(webTorUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -134,12 +251,12 @@ export function PlayerModal({
               {engine === 'instant' ? (
                 <>
                   <Zap size={12} color="#ec4899" />
-                  <span>Instant Stream • {currentSource?.provider || '1080p'}</span>
+                  <span>Instant Cinema • {currentSource?.provider || '1080p'}</span>
                 </>
-              ) : engine === 'webtor' ? (
+              ) : engine === 'webtorrent' ? (
                 <>
                   <Film size={12} />
-                  <span>WebTor Cinema</span>
+                  <span>WebTorrent In-Browser P2P</span>
                 </>
               ) : (
                 <>
@@ -177,7 +294,7 @@ export function PlayerModal({
             loadingStreams ? (
               <div className="player-loading-view">
                 <div className="stream-loading-spinner"></div>
-                <h4>Connecting to PopcornTV Streaming Servers...</h4>
+                <h4>Connecting to Cinema Streaming Servers...</h4>
                 <p>Locating fastest 1080p stream for {mediaMeta?.name || torrent?.title}</p>
               </div>
             ) : currentSource ? (
@@ -193,43 +310,54 @@ export function PlayerModal({
               <div className="stream-fallback-box">
                 <AlertCircle size={44} color="#f59e0b" />
                 <h3>Direct Stream Server Not Ready</h3>
-                <p>{streamError || 'Try launching WebTor or TorrServer below.'}</p>
+                <p>{streamError || 'Switch to WebTorrent P2P or TorrServer below.'}</p>
                 <button
                   className="neu-button neu-button-primary"
-                  onClick={handleLaunchWebTor}
+                  onClick={() => setEngine('webtorrent')}
                 >
-                  <Film size={16} /> Launch in WebTor Player
+                  <Film size={16} /> Switch to WebTorrent Player
                 </button>
               </div>
             )
-          ) : engine === 'webtor' ? (
-            <div className="webtor-deck-view">
-              <div className="webtor-deck-card glass-panel">
-                <div className="webtor-deck-badge">
-                  <Sparkles size={14} /> CLOUDFLARE SAFE LAUNCHER
+          ) : engine === 'webtorrent' ? (
+            <div className="webtorrent-viewport">
+              <video
+                ref={videoRef}
+                className="webtorrent-native-video"
+                controls
+                autoPlay
+                playsInline
+              />
+              {/* P2P Swarm Status Overlay */}
+              <div className="p2p-status-bar glass-panel">
+                <div className="p2p-status-left">
+                  <Wifi size={14} className="p2p-pulse-icon" />
+                  <span className="p2p-status-text">{p2pStatus}</span>
                 </div>
-                <Film size={54} className="webtor-deck-icon" />
-                <h2>WebTor High-Speed Streaming Player</h2>
-                <p className="webtor-deck-desc">
-                  WebTor enforces top-level browser clearance to prevent blank-screen iframe blocking.
-                  Your magnet link is <strong>already copied to your clipboard</strong> and loaded in the launcher!
-                </p>
-
-                <div className="webtor-deck-actions">
-                  <button
-                    className="neu-button neu-button-primary webtor-play-btn"
-                    onClick={handleLaunchWebTor}
-                  >
-                    <ExternalLink size={18} /> Launch WebTor (Auto-Play Video)
-                  </button>
-                  <button
-                    className="neu-button"
-                    onClick={() => setEngine('instant')}
-                  >
-                    <Zap size={16} color="#ec4899" /> Switch to In-App Cinema
-                  </button>
+                <div className="p2p-status-metrics">
+                  <span className="p2p-metric-item" title="Active Peers">
+                    <Users size={12} /> {p2pPeers} peers
+                  </span>
+                  <span className="p2p-metric-item" title="Download Speed">
+                    <Download size={12} /> {p2pSpeed}
+                  </span>
+                  <span className="p2p-metric-badge">
+                    {p2pProgress}% Buffered
+                  </span>
                 </div>
               </div>
+              {p2pError && (
+                <div className="p2p-error-banner">
+                  <AlertCircle size={14} />
+                  <span>{p2pError}</span>
+                  <button
+                    className="p2p-error-switch-btn"
+                    onClick={() => setEngine('instant')}
+                  >
+                    Switch to Instant Cinema
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="torrserver-fallback-view">
@@ -248,7 +376,7 @@ export function PlayerModal({
           )}
         </div>
 
-        {/* Server Switcher Pill Bar (When in Instant Stream Mode) */}
+        {/* Server Switcher Pill Bar (When in Instant Cinema Mode) */}
         {engine === 'instant' && streamSources.length > 1 && (
           <div className="stream-server-bar">
             <span className="server-bar-label">
@@ -278,13 +406,13 @@ export function PlayerModal({
               className={`engine-tab-btn ${engine === 'instant' ? 'active' : ''}`}
               onClick={() => setEngine('instant')}
             >
-              <Zap size={15} color="#ec4899" /> Instant In-App
+              <Zap size={15} color="#ec4899" /> Instant Cinema (1080p)
             </button>
             <button
-              className={`engine-tab-btn ${engine === 'webtor' ? 'active' : ''}`}
-              onClick={() => setEngine('webtor')}
+              className={`engine-tab-btn ${engine === 'webtorrent' ? 'active' : ''}`}
+              onClick={() => setEngine('webtorrent')}
             >
-              <Film size={15} /> WebTor Player
+              <Film size={15} /> WebTorrent (P2P)
             </button>
             <button
               className={`engine-tab-btn ${engine === 'torrserver' ? 'active' : ''}`}
@@ -295,13 +423,6 @@ export function PlayerModal({
           </div>
 
           <div className="external-player-buttons">
-            <button
-              className="neu-button player-sub-btn"
-              onClick={handleLaunchWebTor}
-              title="Open WebTor in a new browser tab with magnet pre-loaded"
-            >
-              <ExternalLink size={15} /> Open WebTor Tab
-            </button>
             <button
               className="neu-button player-sub-btn"
               onClick={handleOpenVLC}
