@@ -287,6 +287,7 @@ export function App() {
         magnet={selectedTorrentForStream?.magnet}
         onSelectInAppStream={handleSelectInAppStream}
         onCopyMagnet={handleCopyMagnet}
+        onSelectRecommendation={handleSearch}
       />
 
       {/* In-App Streaming Theater Player Modal */}
