@@ -23,12 +23,14 @@ import {
   History,
   Activity,
   Menu,
+  Bookmark,
+  Settings,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { getSearchHistory, removeSearchQuery } from '../utils/history';
 import { checkBackendHealth } from '../api/torrentApi';
 
-export function Navbar({ activeTab, onSelectTab, onSearch, currentQuery }) {
+export function Navbar({ activeTab, onSelectTab, onSearch, currentQuery, onOpenSettings }) {
   const { isDark, toggleTheme } = useTheme();
   const [searchInput, setSearchInput] = useState(currentQuery || '');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -132,6 +134,18 @@ export function Navbar({ activeTab, onSelectTab, onSearch, currentQuery }) {
           >
             <Clock size={16} /> Latest
           </button>
+          <button
+            className={`nav-link-btn ${activeTab === 'watchlist' ? 'active' : ''}`}
+            onClick={() => onSelectTab('watchlist')}
+          >
+            <Bookmark size={16} /> Watchlist
+          </button>
+          <button
+            className={`nav-link-btn ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => onSelectTab('history')}
+          >
+            <History size={16} /> History
+          </button>
         </nav>
 
         {/* Right Actions: Search + Day/Dark Toggle + Status */}
@@ -210,6 +224,16 @@ export function Navbar({ activeTab, onSelectTab, onSearch, currentQuery }) {
             {isDark ? <Sun size={18} className="sun-icon" /> : <Moon size={18} className="moon-icon" />}
           </button>
 
+          {/* Settings & Storage Trigger */}
+          <button
+            className="settings-trigger-btn neu-button"
+            onClick={onOpenSettings}
+            title="Settings & Storage Data"
+            aria-label="Settings"
+          >
+            <Settings size={18} />
+          </button>
+
           {/* Mobile Menu Hamburger Toggle */}
           <button
             className="mobile-menu-btn neu-button"
@@ -254,6 +278,24 @@ export function Navbar({ activeTab, onSelectTab, onSearch, currentQuery }) {
               onClick={() => { onSelectTab('latest'); setMobileMenuOpen(false); }}
             >
               <Clock size={18} /> Latest
+            </button>
+            <button
+              className={`mobile-nav-btn ${activeTab === 'watchlist' ? 'active' : ''}`}
+              onClick={() => { onSelectTab('watchlist'); setMobileMenuOpen(false); }}
+            >
+              <Bookmark size={18} /> Watchlist
+            </button>
+            <button
+              className={`mobile-nav-btn ${activeTab === 'history' ? 'active' : ''}`}
+              onClick={() => { onSelectTab('history'); setMobileMenuOpen(false); }}
+            >
+              <History size={18} /> Watch History
+            </button>
+            <button
+              className="mobile-nav-btn"
+              onClick={() => { onOpenSettings(); setMobileMenuOpen(false); }}
+            >
+              <Settings size={18} /> Settings & Storage
             </button>
           </nav>
         </div>

@@ -30,6 +30,9 @@ export function SearchPage({ initialQuery = '', onStream, onDetails, onCopyMagne
 
   useEffect(() => {
     setHistory(getSearchHistory());
+    const syncHistory = () => setHistory(getSearchHistory());
+    window.addEventListener('ext_storage_update', syncHistory);
+    return () => window.removeEventListener('ext_storage_update', syncHistory);
   }, []);
 
   const executeSearch = async (q = query, cat = selectedCategory, s = selectedSort, p = 1) => {

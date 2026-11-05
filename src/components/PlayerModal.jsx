@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { fetchMediaMetadata, cleanTitle } from '../api/metaApi';
 import { getMovieStreams, getTvStreams } from '../api/torrentApi';
+import { addToWatchHistory } from '../utils/storage';
 
 // Public WebRTC Trackers for in-browser WebTorrent P2P
 const WEBRTC_TRACKERS = [
@@ -86,6 +87,7 @@ export function PlayerModal({
         const meta = await fetchMediaMetadata(torrent.title);
         if (!mounted) return;
         setMediaMeta(meta);
+        addToWatchHistory(torrent, meta);
 
         const id = meta?.imdbId || cleanTitle(torrent.title).title;
         const isTv = meta?.type === 'series' || /s\d{1,2}e\d{1,2}/i.test(torrent.title);

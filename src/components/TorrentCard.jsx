@@ -1,8 +1,7 @@
 /**
  * TorrentCard.jsx
  * Netflix-style Glassmorphic Neumorphic Card.
- * Displays high-res posters, seeder metrics, and format-aware action controls.
- * Non-playable content (ZIP, RAR, ISO, EXE, Games, Software) directly shows Download options.
+ * Displays high-res posters, seeder metrics, watchlist toggle, and format-aware action controls.
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -17,14 +16,32 @@ import {
   Film,
   Download,
   Package,
+  Bookmark,
 } from 'lucide-react';
 import { fetchMediaMetadata } from '../api/metaApi';
 import { isPlayableTorrent, getContentFormatLabel } from '../utils/mediaType';
+import { isInWatchlist, toggleWatchlist } from '../utils/storage';
 
 export function TorrentCard({ torrent, onStream, onDetails, onCopyMagnet }) {
   const [metadata, setMetadata] = useState(null);
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+
+  const identifier = torrent?.id || torrent?.infoHash || torrent?.title;
+
+  useEffect(() => {
+    setBookmarked(isInWatchlist(identifier));
+  }, [identifier]);
+
+  // Listen to global storage events to stay in sync
+  useEffect(() => {
+    const handleStorageUpdate = () => {
+      setBookmarked(isInWatchlist(identifier));
+    };
+    window.addEventListener('ext_storage_update', handleStorageUpdate);
+    return () => window.removeEventListener('ext_storage_update', handleStorageUpdate);
+  }, [identifier]);
 
   useEffect(() => {
     let active = true;
@@ -40,7 +57,7 @@ export function TorrentCard({ torrent, onStream, onDetails, onCopyMagnet }) {
 
   const playable = isPlayableTorrent(torrent);
   const posterUrl = metadata?.poster || metadata?.background || null;
-  const displayTitle = metadata?.name || torrent.title;
+  const displayTitle = metadata?.name || metadata?.title || torrent.title;
   const seeders = parseInt(torrent.seeders) || 0;
   const leechers = parseInt(torrent.leechers) || 0;
 
@@ -58,6 +75,15 @@ export function TorrentCard({ torrent, onStream, onDetails, onCopyMagnet }) {
     if (torrent.magnet) {
       onCopyMagnet(torrent.magnet, 'Opening magnet in torrent client...');
       window.location.href = torrent.magnet;
+    }
+  };
+
+  const handleToggleWatchlist = (e) => {
+    e.stopPropagation();
+    const isNowIn = toggleWatchlist(torrent, metadata || {});
+    setBookmarked(isNowIn);
+    if (onCopyMagnet) {
+      onCopyMagnet(null, isNowIn ? 'Added to Watchlist!' : 'Removed from Watchlist');
     }
   };
 
@@ -84,6 +110,15 @@ export function TorrentCard({ torrent, onStream, onDetails, onCopyMagnet }) {
           </div>
         )}
 
+        {/* Watchlist Quick Button Top Left */}
+        <button
+          className={`card-bookmark-btn ${bookmarked ? 'bookmarked' : ''}`}
+          onClick={handleToggleWatchlist}
+          title={bookmarked ? 'In Watchlist' : 'Add to Watchlist'}
+        >
+          <Bookmark size={15} fill={bookmarked ? '#f59e0b' : 'none'} color={bookmarked ? '#f59e0b' : '#ffffff'} />
+        </button>
+
         {/* Quality / Rating Badges Top Right */}
         <div className="card-top-badges">
           {!playable && (
@@ -106,7 +141,7 @@ export function TorrentCard({ torrent, onStream, onDetails, onCopyMagnet }) {
         {/* Card Overlay on Hover */}
         <div className="card-hover-overlay">
           <div className="hover-actions-bar">
-            {/* Play Button - ONLY shown if content is a playable video format */}
+            {/* Play Button */}
             {playable ? (
               <button
                 className="hover-action-btn btn-play"
@@ -116,7 +151,6 @@ export function TorrentCard({ torrent, onStream, onDetails, onCopyMagnet }) {
                 <Play size={18} fill="#ffffff" />
               </button>
             ) : (
-              /* For non-playable content (ZIP/ISO/EXE/Games), directly show Download button */
               <button
                 className="hover-action-btn btn-download-primary"
                 onClick={handleDirectDownload}
@@ -125,6 +159,15 @@ export function TorrentCard({ torrent, onStream, onDetails, onCopyMagnet }) {
                 <Download size={18} />
               </button>
             )}
+
+            {/* Bookmark in Hover Bar */}
+            <button
+              className={`hover-action-btn btn-bookmark ${bookmarked ? 'active' : ''}`}
+              onClick={handleToggleWatchlist}
+              title={bookmarked ? 'Remove from Watchlist' : 'Add to Watchlist'}
+            >
+              <Bookmark size={16} fill={bookmarked ? '#f59e0b' : 'none'} color={bookmarked ? '#f59e0b' : '#ffffff'} />
+            </button>
 
             {/* Copy Magnet Button */}
             {torrent.magnet && (

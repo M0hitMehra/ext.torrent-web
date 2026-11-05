@@ -27,10 +27,12 @@ import {
   Sparkles,
   Clapperboard,
   Search,
+  Bookmark,
 } from 'lucide-react';
 import { fetchRichMediaDetails } from '../api/metaApi';
 import { getTorrentDetail } from '../api/torrentApi';
 import { isPlayableTorrent, getContentFormatLabel } from '../utils/mediaType';
+import { isInWatchlist, toggleWatchlist } from '../utils/storage';
 
 export function DetailModal({
   visible,
@@ -44,6 +46,19 @@ export function DetailModal({
   const [metadata, setMetadata] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(false);
+
+  const identifier = torrent?.infoHash || torrent?.id || torrent?.title;
+
+  useEffect(() => {
+    setInWatchlist(isInWatchlist(identifier));
+  }, [identifier, visible]);
+
+  useEffect(() => {
+    const handleStorage = () => setInWatchlist(isInWatchlist(identifier));
+    window.addEventListener('ext_storage_update', handleStorage);
+    return () => window.removeEventListener('ext_storage_update', handleStorage);
+  }, [identifier]);
 
   useEffect(() => {
     setDetail(torrent);
@@ -91,6 +106,12 @@ export function DetailModal({
       onCopyMagnet(magnet, 'Opening magnet link in torrent client...');
       window.location.href = magnet;
     }
+  };
+
+  const handleToggleWatchlist = () => {
+    const isNow = toggleWatchlist(currentItem, metadata || {});
+    setInWatchlist(isNow);
+    onCopyMagnet(null, isNow ? 'Added to Watchlist!' : 'Removed from Watchlist');
   };
 
   const handleRecClick = (recTitle) => {
@@ -203,6 +224,16 @@ export function DetailModal({
                 <span>DOWNLOAD TORRENT (MAGNET)</span>
               </button>
             )}
+
+            {/* Watchlist Toggle Button */}
+            <button
+              className={`neu-button detail-btn-watchlist ${inWatchlist ? 'active' : ''}`}
+              onClick={handleToggleWatchlist}
+              title={inWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
+            >
+              <Bookmark size={18} fill={inWatchlist ? '#f59e0b' : 'none'} color={inWatchlist ? '#f59e0b' : 'currentColor'} />
+              <span>{inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}</span>
+            </button>
 
             {magnet && (
               <button

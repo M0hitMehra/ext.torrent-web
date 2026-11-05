@@ -21,6 +21,8 @@ import { PlayerSelectorModal } from './components/PlayerSelectorModal';
 import { DetailModal } from './components/DetailModal';
 import { SearchPage } from './components/SearchPage';
 import { Toast } from './components/Toast';
+import { SettingsModal } from './components/SettingsModal';
+import { UserDataView } from './components/UserDataView';
 import { getTrending, getLatest, browseTorrents } from './api/torrentApi';
 
 export function App() {
@@ -43,6 +45,7 @@ export function App() {
   const [playerModalOpen, setPlayerModalOpen] = useState(false);
   const [streamEngine, setStreamEngine] = useState('webtor');
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   // Toast state
   const [toastMessage, setToastMessage] = useState('');
@@ -131,6 +134,7 @@ export function App() {
         onSelectTab={handleSelectTab}
         onSearch={handleSearch}
         currentQuery={searchQuery}
+        onOpenSettings={() => setSettingsModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -180,6 +184,22 @@ export function App() {
               onCopyMagnet={handleCopyMagnet}
             />
           </div>
+        ) : activeTab === 'watchlist' ? (
+          <UserDataView
+            type="watchlist"
+            onStream={handleOpenStream}
+            onDetails={handleOpenDetail}
+            onCopyMagnet={handleCopyMagnet}
+            onExplore={() => handleSelectTab('trending')}
+          />
+        ) : activeTab === 'history' ? (
+          <UserDataView
+            type="history"
+            onStream={handleOpenStream}
+            onDetails={handleOpenDetail}
+            onCopyMagnet={handleCopyMagnet}
+            onExplore={() => handleSelectTab('trending')}
+          />
         ) : (
           /* Home Netflix View */
           <>
@@ -311,6 +331,13 @@ export function App() {
 
       {/* Floating Glass Toast */}
       <Toast message={toastMessage} visible={toastVisible} />
+
+      {/* Settings & Storage Modal */}
+      <SettingsModal
+        visible={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        onDataCleared={(msg) => handleCopyMagnet(null, msg)}
+      />
     </div>
   );
 }
