@@ -38,9 +38,16 @@ export function PlayerSelectorModal({
     onSelectInAppStream('instant');
   };
 
-  // 2. WebTorrent In-Browser P2P Player
+  // 2. Webtor In-Browser Player (Official Webtor Embed)
+  const handleWebtorEmbed = async () => {
+    await onCopyMagnet(magnet, 'Magnet copied! Starting Webtor Player...');
+    onClose();
+    onSelectInAppStream('webtor');
+  };
+
+  // 3. WebTorrent In-Browser P2P Player
   const handleWebTorrentP2P = async () => {
-    await onCopyMagnet(magnet, 'Magnet copied! Starting In-Browser P2P Stream...');
+    await onCopyMagnet(magnet, 'Magnet copied! Starting WebTorrent P2P Stream...');
     onClose();
     onSelectInAppStream('webtorrent');
   };
@@ -121,7 +128,27 @@ export function PlayerSelectorModal({
             <Play size={20} className="option-arrow-icon" fill="currentColor" />
           </div>
 
-          {/* Option 2: WebTorrent In-Browser P2P Streamer */}
+          {/* Option 2: Webtor Official In-Browser Streamer */}
+          <div
+            className="player-option-tile neu-button"
+            onClick={handleWebtorEmbed}
+          >
+            <div className="option-tile-icon icon-webtor">
+              <Film size={22} color="#ec4899" />
+            </div>
+            <div className="option-tile-body">
+              <div className="option-title-row">
+                <span className="option-title">Webtor In-Browser Streaming</span>
+                <span className="badge-pill badge-browser">OFFICIAL WEBTOR PLAYER</span>
+              </div>
+              <p className="option-desc">
+                Streams video torrent directly in your web page with real-time audio/video transcoding and subtitle support.
+              </p>
+            </div>
+            <Play size={18} className="option-arrow-icon" fill="currentColor" />
+          </div>
+
+          {/* Option 3: WebTorrent In-Browser P2P Streamer */}
           <div
             className="player-option-tile neu-button"
             onClick={handleWebTorrentP2P}
@@ -131,7 +158,7 @@ export function PlayerSelectorModal({
             </div>
             <div className="option-tile-body">
               <div className="option-title-row">
-                <span className="option-title">WebTorrent In-Browser P2P</span>
+                <span className="option-title">WebTorrent P2P Client</span>
                 <span className="badge-pill badge-browser">PEER-TO-PEER</span>
               </div>
               <p className="option-desc">

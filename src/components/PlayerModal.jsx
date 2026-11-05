@@ -220,6 +220,45 @@ export function PlayerModal({
     };
   }, [visible, magnet, engine]);
 
+  // Webtor Official In-App Embed Engine Handler
+  useEffect(() => {
+    if (!visible || !magnet || engine !== 'webtor') return;
+
+    let timer = null;
+    const container = document.getElementById('webtor-player-box');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const initWebtor = () => {
+      try {
+        window.webtor = window.webtor || [];
+        window.webtor.push({
+          id: 'webtor-player-box',
+          magnet: magnet,
+          poster: mediaMeta?.poster || mediaMeta?.background || '',
+          title: torrent?.title || 'Streaming Video',
+          imdbId: mediaMeta?.imdbId || '',
+          width: '100%',
+          height: '100%',
+          header: true,
+          controls: true,
+          theme: 'dark',
+        });
+      } catch (err) {
+        console.warn('Webtor embed error:', err);
+      }
+    };
+
+    // Initialize with slight timeout to ensure container is mounted in DOM
+    timer = setTimeout(initWebtor, 150);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      if (container) container.innerHTML = '';
+    };
+  }, [visible, magnet, engine, mediaMeta, torrent]);
+
   if (!visible || !magnet) return null;
 
   const currentSource = streamSources[selectedSourceIndex] || null;
@@ -254,6 +293,11 @@ export function PlayerModal({
                 <>
                   <Zap size={12} color="#ec4899" />
                   <span>Instant Cinema • {currentSource?.provider || '1080p'}</span>
+                </>
+              ) : engine === 'webtor' ? (
+                <>
+                  <Film size={12} color="#ec4899" />
+                  <span>Webtor In-Browser Player</span>
                 </>
               ) : engine === 'webtorrent' ? (
                 <>
@@ -312,15 +356,27 @@ export function PlayerModal({
               <div className="stream-fallback-box">
                 <AlertCircle size={44} color="#f59e0b" />
                 <h3>Direct Stream Server Not Ready</h3>
-                <p>{streamError || 'Switch to WebTorrent P2P or TorrServer below.'}</p>
-                <button
-                  className="neu-button neu-button-primary"
-                  onClick={() => setEngine('webtorrent')}
-                >
-                  <Film size={16} /> Switch to WebTorrent Player
-                </button>
+                <p>{streamError || 'Switch to Webtor, WebTorrent P2P or TorrServer below.'}</p>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    className="neu-button neu-button-primary"
+                    onClick={() => setEngine('webtor')}
+                  >
+                    <Film size={16} /> Switch to Webtor Player
+                  </button>
+                  <button
+                    className="neu-button"
+                    onClick={() => setEngine('webtorrent')}
+                  >
+                    <Film size={16} /> WebTorrent P2P
+                  </button>
+                </div>
               </div>
             )
+          ) : engine === 'webtor' ? (
+            <div className="webtor-embedded-viewport">
+              <div id="webtor-player-box" className="webtor-inapp-player-container"></div>
+            </div>
           ) : engine === 'webtorrent' ? (
             <div className="webtorrent-viewport">
               <video
@@ -409,6 +465,12 @@ export function PlayerModal({
               onClick={() => setEngine('instant')}
             >
               <Zap size={15} color="#ec4899" /> Instant Cinema (1080p)
+            </button>
+            <button
+              className={`engine-tab-btn ${engine === 'webtor' ? 'active' : ''}`}
+              onClick={() => setEngine('webtor')}
+            >
+              <Film size={15} color="#ec4899" /> Webtor (In-App)
             </button>
             <button
               className={`engine-tab-btn ${engine === 'webtorrent' ? 'active' : ''}`}
